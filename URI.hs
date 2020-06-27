@@ -36,12 +36,17 @@ pScheme = choice
 data Uri = Uri
   { uriScheme :: Scheme
   , uriAuthority :: Maybe Authority
+  , uriPath :: Maybe Path
   } deriving (Eq, Show)
 
 data Authority = Authority
   { authUser :: Maybe (Text, Text)
   , authHost :: Text
   , authPort :: Maybe Int
+  } deriving (Eq, Show)
+
+data Path = Path
+  { path :: Text
   } deriving (Eq, Show)
 
 pAuthority :: Parser (Maybe Authority)
@@ -59,11 +64,20 @@ pAuthority = do
     return Authority {..}
   return uriAuthority
 
+pPath :: Parser (Maybe Path)
+pPath = do
+  uriPath <- optional . try $ do
+    void (char '/')
+    path <- T.pack <$> some alphaNumChar
+    return Path {..}
+  return uriPath
+
 pUri :: Parser Uri
 pUri = do
   uriScheme <- pScheme
   void (char ':')
   uriAuthority <- pAuthority
+  uriPath <- pPath
   return Uri {..}
 
 main = return ()
