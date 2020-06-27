@@ -44,10 +44,8 @@ data Authority = Authority
   , authPort :: Maybe Int
   } deriving (Eq, Show)
 
-pUri :: Parser Uri
-pUri = do
-  uriScheme <- pScheme
-  void (char ':')
+pAuthority :: Parser (Maybe Authority)
+pAuthority = do
   uriAuthority <- optional . try $ do
     void (string "//")
     authUser <- optional . try $ do
@@ -59,6 +57,13 @@ pUri = do
     authHost <- T.pack <$> some (alphaNumChar <|> char '.')
     authPort <- optional (char ':' *> L.decimal)
     return Authority {..}
+  return uriAuthority
+
+pUri :: Parser Uri
+pUri = do
+  uriScheme <- pScheme
+  void (char ':')
+  uriAuthority <- pAuthority
   return Uri {..}
 
 main = return ()
