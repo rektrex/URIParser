@@ -3,7 +3,7 @@
 
 module Main (main) where
 
-import Control.Applicative
+import Control.Applicative hiding (some)
 import Control.Monad
 import Data.Text (Text)
 import Data.Void
@@ -33,12 +33,32 @@ pScheme = choice
   , SchemeIrc    <$ string "irc"
   , SchemeMailto <$ string "mailto" ]
 
-data Uri = Uri { uriScheme :: Scheme } deriving (Eq, Show)
+data Uri = Uri
+  { uriScheme :: Scheme
+  , uriAuthority :: Maybe Authority
+  } deriving (Eq, Show)
+
+data Authority = Authority
+  { authUser :: Maybe (Text, Text)
+  , authHost :: Text
+  , authPort :: Maybe Int
+  } deriving (Eq, Show)
 
 pUri :: Parser Uri
 pUri = do
-  r <- pScheme
-  _ <- char ':'
-  return $ Uri r
+  uriScheme <- pScheme
+  void (char ':')
+  uriAuthority <- optional . try $ do
+    void (string "//")
+    authUser <- optional . try $ do
+      user <- T.pack <$> some alphaNumChar
+      void (char ':')
+      password <- T.pack <$> some alphaNumChar
+      void (char '@')
+      return (user, password)
+    authHost <- T.pack <$> some (alphaNumChar <|> char '.')
+    authPort <- optional (char ':' *> L.decimal)
+    return Authority {..}
+  return Uri {..}
 
 main = return ()
