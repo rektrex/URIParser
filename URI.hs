@@ -37,6 +37,8 @@ data Uri = Uri
   { uriScheme :: Scheme
   , uriAuthority :: Maybe Authority
   , uriPath :: Maybe Path
+  , uriQuery :: Maybe Query
+  , uriFragment :: Maybe Fragment
   } deriving (Eq, Show)
 
 data Authority = Authority
@@ -47,6 +49,14 @@ data Authority = Authority
 
 data Path = Path
   { path :: Text
+  } deriving (Eq, Show)
+
+data Query = Query
+  { query :: Text
+  } deriving (Eq, Show)
+
+data Fragment = Fragment
+  { fragment :: Text
   } deriving (Eq, Show)
 
 pAuthority :: Parser (Maybe Authority)
@@ -72,12 +82,30 @@ pPath = do
     return Path {..}
   return uriPath
 
+pQuery :: Parser (Maybe Query)
+pQuery = do
+  uriQuery <- optional . try $ do
+    void (char '?')
+    query <- T.pack <$> some alphaNumChar
+    return Query {..}
+  return uriQuery
+
+pFragment :: Parser (Maybe Fragment)
+pFragment = do
+  uriFragment <- optional . try $ do
+    void (char '#')
+    fragment <- T.pack <$> some alphaNumChar
+    return Fragment {..}
+  return uriFragment
+
 pUri :: Parser Uri
 pUri = do
   uriScheme <- pScheme
   void (char ':')
   uriAuthority <- pAuthority
   uriPath <- pPath
+  uriQuery <- pQuery
+  uriFragment <- pFragment
   return Uri {..}
 
 main = return ()
